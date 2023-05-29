@@ -7,6 +7,8 @@ export const handle = (async ({ event, resolve }) => {
 		event.locals.pb = new PocketBase(POCKETBASE_URI);
 	}
 
+	console.log('Hook server running');
+
 	try {
 		const res = await event.locals.pb.health.check({});
 		if (res.code !== 200) {
@@ -16,11 +18,11 @@ export const handle = (async ({ event, resolve }) => {
 		throw error(500, 'Pocketbase failed to connect at all');
 	}
 	if (process.env.NODE_ENV !== 'production') {
-		// const user = process.env.PB_TEST;
-		// const pwd = process.env.PB_TEST_PWD;
+		const user = process.env.PB_TEST;
+		const pwd = process.env.PB_TEST_PWD;
 		// await event.locals.pb.admins.authWithPassword(user, pwd);
-		// await event.locals.pb.collection('users').authWithPassword(user, pwd);
-		// return resolve(event);
+		await event.locals.pb.collection('users').authWithPassword(user, pwd);
+		return resolve(event);
 	}
 
 	const session = event.cookies.get('session') ?? '';
@@ -34,6 +36,7 @@ export const handle = (async ({ event, resolve }) => {
 			console.log('No cookie found, redirecting');
 			throw redirect(303, '/');
 		}
+		return resolve(event);
 	}
 
 	// load the store data from the request cookie string

@@ -4,13 +4,16 @@
 	import { Flow } from '$lib/consts';
 	import { pbStore, socketStore, flowStore } from '$lib/store';
 	import type { AuthProviderInfo } from 'pocketbase';
+	import PocketBase from 'pocketbase';
+
 	import { onMount } from 'svelte';
 	$: username = $flowStore === Flow.ssr ? $page.data.username : $pbStore.authStore.model?.username;
 
 	let pbClientAuthProviders: AuthProviderInfo[] = [];
-
+	const pb = new PocketBase(PUBLIC_POCKETBASE_URI);
 	async function getpbClientAuthProviders() {
-		const providers = (await $pbStore.collection('users').listAuthMethods()).authProviders;
+		// const providers = (await $pbStore.collection('users').listAuthMethods()).authProviders;
+		const providers = (await pb.collection('users').listAuthMethods()).authProviders;
 		return providers;
 	}
 	onMount(() => {
@@ -19,7 +22,7 @@
 				pbClientAuthProviders = providers;
 			})
 			.catch(() => {
-				console.log('Check PB is serving to LAN and not only to localhost');
+				console.log('Error while getting auth providers from client');
 			});
 	});
 	$: providers = $flowStore === Flow.ssr ? $page.data.authProviders : pbClientAuthProviders;

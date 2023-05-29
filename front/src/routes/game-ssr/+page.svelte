@@ -50,6 +50,10 @@
 		socket.on('move', (record: RecordSSR) => {
 			if (!$gameStore.partida) {
 				$gameStore.partida = record.id;
+			}
+			if ($gameStore.they === record.p2) {
+				$gameStore.m2 = record.m2;
+			} else if ($gameStore.they === record.p1) {
 				$gameStore.m2 = record.m1;
 			}
 			$gameStore.finished = record.finished;

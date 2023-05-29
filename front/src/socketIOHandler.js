@@ -55,7 +55,6 @@ export default function injectSocketIO(server) {
 							.collection('partidas')
 							.create({ m1: gameStatus.move, p1: gameStatus.me });
 						console.log('SocketIOHandler: Creating', record.id);
-						console.log(record);
 					} else {
 						const { m1, p1 } = await pb.collection('partidas').getOne(gameStatus.partida);
 
@@ -74,7 +73,6 @@ export default function injectSocketIO(server) {
 					socket.broadcast.emit('move', record);
 				} catch (e) {
 					console.log('Error while updating the DB. Check pocketbase permissions');
-					console.log(e);
 				}
 			}
 		);

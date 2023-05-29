@@ -1,9 +1,9 @@
 export const moves = /** @type {const} */ (['✌️', '🖐️', '✊']);
 
 export const patitas = /** @type {const} */ ({
-	'✌️': '/tijera.PNG',
-	'🖐️': '/papel.PNG',
-	'✊': '/piedra.PNG',
+	'✌️': '/tijera.png',
+	'🖐️': '/papel.png',
+	'✊': '/piedra.png',
 	'': ''
 });
 

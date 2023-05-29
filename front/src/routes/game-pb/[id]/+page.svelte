@@ -95,15 +95,6 @@
 									comment: record.comment + ' ' + `Set next room to ${record.id}.`
 								});
 								console.log('Set next room to: ', newRoomID);
-								// // Subscribing eagerly to the new room to get player info ASAP and do not mess with turns.
-								// await $pbStore
-								// 	.collection('rooms')
-								// 	.subscribe(newRoomID, ({ record: newRoomRecord }: { record: RoomRecord }) => {
-								// 		console.log(`Received broadcast for new room: ${newRoomRecord.comment}`);
-								// 		$gameStore.me = newRoomRecord.p1;
-								// 		$gameStore.they = newRoomRecord.p2;
-								// 	});
-								// console.log('Subscribed to new room', newRoomID);
 							}
 						}
 					}

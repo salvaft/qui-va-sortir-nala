@@ -21,7 +21,6 @@ export const actions: Actions = {
 			const filter = `id~"${roomID}"`;
 			const record = await pb.collection('rooms').getFirstListItem(filter);
 
-			console.log(record.id);
 			return { success: true, id: record.id };
 		} catch (e) {
 			return fail(400, { message: 'Room not found' });

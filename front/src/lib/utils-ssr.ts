@@ -28,7 +28,6 @@ export const move = async ({
 	});
 
 	const gameStatus = getGameStatusFromStore();
-	console.log(gameStatus);
 	socket.emit('move', gameStatus);
 
 	enableButtons();
