@@ -13,7 +13,7 @@ export const gameStore = {
 	reset: () =>
 		game.update((state) => ({
 			...initGame(),
-			waiting: state.waiting,
+			waiting: !state.waiting,
 			myUsername: state.myUsername,
 			theirUsername: state.theirUsername,
 			me: state.me,
