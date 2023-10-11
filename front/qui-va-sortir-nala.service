@@ -1,6 +1,7 @@
 #!/sbin/openrc-run
 depend() {
     need net
+    need pocketbase
 }
 command="node"
 command_args="./src/server.js"
