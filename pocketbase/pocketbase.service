@@ -1,6 +1,7 @@
 #!/sbin/openrc-run
 depend() {
     need net
+    use qui-va-sortir-nala
 }
 command="/opt/pocketbase/pocketbase"
 command_args="serve --http 192.168.0.113:8090"
