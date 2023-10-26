@@ -1,10 +1,9 @@
 #!/sbin/openrc-run
 depend() {
     need net
-    need pocketbase
 }
 command="node"
-command_args="./src/server.js"
+command_args="build/index.js"
 directory="/opt/qui-va-sortir-nala"
 pidfile="/run/${RC_SVCNAME}.pid"
 command_user="sft"
@@ -13,3 +12,4 @@ command_background=true
 description="qui-va-sortir-nala"
 export ORIGIN=https://nala.proxy.pve
 export NODE_ENV=production
+export PORT=4444

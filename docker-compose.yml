@@ -1,16 +1,5 @@
-version: '3.8'
+version: "3.8"
 services:
-  pocketbase:
-    build:
-      context: ./pocketbase
-      dockerfile: ./dockerfile
-    ports:
-      - 8090:8090
-    restart: on-failure
-    volumes:
-      - pocketbase_vol:/opt/pb_data/
-    networks:
-      - monorepo_net
   front:
     build:
       context: ./front
@@ -18,12 +7,3 @@ services:
     ports:
       - 8091:5173
     restart: on-failure
-    networks:
-      - monorepo_net
-
-volumes:
-  pocketbase:
-
-networks:
-  monorepo_net:
-    driver: bridge

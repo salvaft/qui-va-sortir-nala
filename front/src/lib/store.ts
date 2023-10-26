@@ -1,10 +1,5 @@
 import { writable } from 'svelte/store';
-import { initGame } from '$lib/utils';
-import { Flow } from './consts';
-import PocketBase from 'pocketbase';
-import { PUBLIC_POCKETBASE_URI } from '$env/static/public';
-import type { IFlow } from './types.d';
-import { browser } from '$app/environment';
+import type { GameStatus } from './types';
 
 const game = writable(initGame());
 
@@ -13,38 +8,18 @@ export const gameStore = {
 	reset: () =>
 		game.update((state) => ({
 			...initGame(),
-			waiting: !state.waiting,
-			myUsername: state.myUsername,
-			theirUsername: state.theirUsername,
-			me: state.me,
-			they: state.they
+			me: state.me
 		}))
 };
 
 export type gameStore = typeof gameStore;
-
-export const socketStore = writable('');
-
-function createFlowStore() {
-	let initialFlow: IFlow = Flow.ssr;
-	if (browser) {
-		if (localStorage.getItem('flow') !== null) {
-			initialFlow = localStorage.getItem('flow') as IFlow;
-		}
-	}
-	const { set, update, subscribe } = writable(initialFlow);
-
+function initGame(): GameStatus {
 	return {
-		set(state: IFlow) {
-			if (browser) {
-				localStorage.setItem('flow', state);
-			}
-			set(state);
-		},
-		update,
-		subscribe
+		m1: '',
+		m2: '',
+		me: '',
+		they: '',
+		status: 'waiting',
+		winner: ''
 	};
 }
-export const flowStore = createFlowStore();
-
-export const pbStore = writable(new PocketBase(PUBLIC_POCKETBASE_URI));

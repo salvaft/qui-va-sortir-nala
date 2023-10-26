@@ -1,75 +1,95 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { io } from 'socket.io-client';
-	import type { wsClient, RecordSSR } from '$lib/types';
-	import { page } from '$app/stores';
-	import { confettiAndResetGameStore, enableButtons } from '$lib/utils';
-	import { gameStore, socketStore } from '$lib/store';
-	import { PUBLIC_WS_URI } from '$env/static/public';
+	import { gameStore } from '$lib/store';
 	import Board from '@components/board.svelte';
 	import Movements from '@components/movements.svelte';
-	import Waiter from '@components/waiter.svelte';
 	import GameInfo from '@components/gameInfo.svelte';
-	import { createHandleClickSSR } from '$lib/utils-ssr';
+	import { combinations } from '$lib/consts';
+	import type { EventType, Move } from '$lib/types';
+	import confetti from 'canvas-confetti';
 
-	let socket: wsClient;
-
-	$: if ($gameStore.finished === true) {
-		setTimeout(() => {
-			confettiAndResetGameStore();
-		}, 400);
+	let timeoutHandle: null | ReturnType<typeof setTimeout> = null;
+	$: {
+		if ($gameStore.status === 'finished') {
+			$gameStore.winner = checkWinner({
+				m1: $gameStore.m1,
+				m2: $gameStore.m2,
+				p1: $gameStore.me,
+				p2: $gameStore.they
+			});
+			if ($gameStore.winner === $gameStore.me) {
+				confetti();
+			}
+			timeoutHandle = setTimeout(() => {
+				$gameStore.m1 = '';
+				$gameStore.m2 = '';
+				$gameStore.status = 'playing';
+				timeoutHandle = null;
+			}, 1000);
+		}
 	}
 
-	onMount(() => {
-		$gameStore.me = $page.data.id;
-		$gameStore.myUsername = $page.data.username;
-
-		if (!socket)
-			socket = io(PUBLIC_WS_URI, { query: { id: $page.data.id, username: $page.data.username } });
-		socket.on('hello', ({ waiting }) => {
-			$socketStore = socket.id;
-			$gameStore.waiting = waiting;
-			if (!waiting) {
-				enableButtons();
-			}
-		});
-		socket.on('meet', ({ id, username }) => {
-			$gameStore.they = id;
-			$gameStore.theirUsername = username;
-			socket.emit('meetBack', { id: $page.data.id });
-		});
-		socket.on('meetBack', ({ id, username }) => {
-			$gameStore.they = id;
-			$gameStore.theirUsername = username;
-		});
-		socket.on('leave', () => {
+	const events = {
+		meet: ({ they }: { they: string }) => {
+			$gameStore.they = they;
+			$gameStore.status = 'playing';
+		},
+		leave: () => {
 			$gameStore.they = '';
-			$gameStore.theirUsername = '';
-		});
+			gameStore.reset();
+		},
+		opponentMove: ({ move }: { move: Move }) => {
+			$gameStore.m2 = move;
+			if ($gameStore.m1 !== '' && $gameStore.m2 !== '') {
+				$gameStore.status = 'finished';
+			}
+		},
+		join: ({ me }: { me: string }) => {
+			$gameStore.me = me;
+		}
+	};
+	onMount(() => {
+		const evt = new EventSource('/api/sse');
 
-		socket.on('move', (record: RecordSSR) => {
-			if (!$gameStore.partida) {
-				$gameStore.partida = record.id;
-			}
-			if ($gameStore.they === record.p2) {
-				$gameStore.m2 = record.m2;
-			} else if ($gameStore.they === record.p1) {
-				$gameStore.m2 = record.m1;
-			}
-			$gameStore.finished = record.finished;
-			$gameStore.winner = record.winner;
-			$gameStore.waiting = !$gameStore.waiting;
-		});
+		evt.onmessage = (e) => {
+			const data = JSON.parse(e.data);
+			const eventName: EventType = data.eventType;
+			const action = events[eventName];
+			action(data);
+		};
 
 		return () => {
-			socket.disconnect();
+			evt.close();
+			if (timeoutHandle !== null) clearTimeout(timeoutHandle);
 			gameStore.reset();
-			socketStore.set('');
 		};
 	});
+
+	export const checkWinner = ({
+		m1,
+		m2,
+		p1,
+		p2
+	}: {
+		m1: Move;
+		m2: Move;
+		p1: string;
+		p2: string;
+	}) => {
+		let winnerMove = null;
+
+		combinations.some(([[c1, c2], w]) => {
+			if (c1 === m1 && c2 === m2) winnerMove = w;
+		});
+		const options = {
+			[m1]: p1,
+			[m2]: p2
+		};
+		if (winnerMove === null) return null;
+		return options[winnerMove];
+	};
 </script>
 
 <Board />
-<Movements clickHandler={createHandleClickSSR({ socket, gameStore })} />
-<Waiter />
+<Movements />
 <GameInfo />
