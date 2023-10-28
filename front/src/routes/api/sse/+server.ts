@@ -7,10 +7,12 @@ export const GET = async ({ cookies }) => {
 	const playerId = cookies.get('player_id') ?? crypto.randomUUID();
 
 	if (connectionMap.size >= 2) {
-		return new Response('{"error":"Max players reached"}', { status: 500 });
+		return new Response(JSON.stringify({ error: 'Max players reached' }), { status: 500 });
 	}
 	const readable = new ReadableStream({
 		start(controller) {
+			connectionMap.set(playerId, { ctlr: controller, move: '' });
+
 			connectionMap.forEach(({ ctlr }, id) => {
 				if (ctlr !== controller) {
 					const eventType: EventType = 'meet';
@@ -20,8 +22,6 @@ export const GET = async ({ cookies }) => {
 			});
 			const eventType: EventType = 'join';
 			controller.enqueue(`data:${JSON.stringify({ eventType, me: playerId })}\n\n`);
-
-			connectionMap.set(playerId, { ctlr: controller, move: '' });
 		},
 		cancel() {
 			connectionMap.forEach(({ ctlr }, id) => {
@@ -30,6 +30,7 @@ export const GET = async ({ cookies }) => {
 					ctlr.enqueue(`data:${JSON.stringify({ eventType, they: playerId })}\n\n`);
 				}
 			});
+			console.log(`Player ${playerId} left`);
 			connectionMap.delete(playerId);
 		}
 	});
@@ -38,7 +39,7 @@ export const GET = async ({ cookies }) => {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache',
 			Connection: 'keep-alive',
-			'Set-Cookie': `player_id=${playerId}; Max-Age=Session; SameSite=lax; Path=/; httpOnly;`
+			'Set-Cookie': `player_id=${playerId}; Max-Age=3600; SameSite=strict; Path=/; httpOnly; secure=true`
 		}
 	});
 	return resp;
@@ -47,6 +48,7 @@ export const GET = async ({ cookies }) => {
 export const POST = async ({ request, cookies }) => {
 	const playerId = cookies.get('player_id');
 	if (!playerId) {
+		console.log('No player id');
 		return new Response('{"error":"No player id"}', { status: 400 });
 	}
 	const player = connectionMap.get(playerId);
@@ -57,6 +59,7 @@ export const POST = async ({ request, cookies }) => {
 	if (data.move === '') {
 		return new Response('{"error":"No move"}', { status: 400 });
 	}
+	console.log(`Player ${playerId} made move ${data.move}`);
 	connectionMap.set(playerId, { ctlr: player.ctlr, move: data.move });
 
 	const salvaCtrl = connectionMap.get(SALVA_MAGIC_ID)?.ctlr;

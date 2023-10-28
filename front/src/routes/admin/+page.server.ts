@@ -8,9 +8,9 @@ export const actions: Actions = {
 		const pass = formData.get('pass') ?? '';
 		if (pass === SALVA_MAGIC_PASS) {
 			cookies.set('player_id', SALVA_MAGIC_ID, {
-				maxAge: 'Session',
-				SameSite: 'lax',
-				Path: '/',
+				maxAge: 3600,
+				sameSite: 'strict',
+				path: '/',
 				httpOnly: true,
 				secure: false
 			});
