@@ -7,10 +7,8 @@
 	import '@skeletonlabs/skeleton/styles/all.css';
 	// Finally, your application's global stylesheet (sometimes labeled 'app.css')
 	import '../app.postcss';
-	import { Toast } from '@skeletonlabs/skeleton';
 </script>
 
-<Toast />
 <svelte:head
 	><link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 	<link rel="apple-touch-icon" sizes="48x48" href="/apple-touch-icon-48-48.png" />
