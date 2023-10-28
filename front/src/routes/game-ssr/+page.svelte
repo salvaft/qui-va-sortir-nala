@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { gameStore } from '$lib/store';
+	import { errorStore, gameStore } from '$lib/store';
 	import Board from '@components/board.svelte';
 	import Movements from '@components/movements.svelte';
 	import GameInfo from '@components/gameInfo.svelte';
@@ -9,6 +9,7 @@
 	import confetti from 'canvas-confetti';
 
 	let timeoutHandle: null | ReturnType<typeof setTimeout> = null;
+
 	$: {
 		if ($gameStore.status === 'finished') {
 			$gameStore.winner = checkWinner({
@@ -31,6 +32,7 @@
 
 	const events = {
 		meet: ({ they }: { they: string }) => {
+			gameStore.reset();
 			$gameStore.they = they;
 			$gameStore.status = 'playing';
 		},
@@ -50,7 +52,10 @@
 	};
 	onMount(() => {
 		const evt = new EventSource('/api/sse');
-
+		evt.onerror = (e) => {
+			$errorStore = true;
+			console.log("Max player limit reached, can't join");
+		};
 		evt.onmessage = (e) => {
 			const data = JSON.parse(e.data);
 			const eventName: EventType = data.eventType;
@@ -90,6 +95,10 @@
 	};
 </script>
 
-<Board />
-<Movements />
-<GameInfo />
+{#if $errorStore}
+	<h1>Connection problem with server</h1>
+{:else}
+	<Board />
+	<Movements />
+	<GameInfo />
+{/if}

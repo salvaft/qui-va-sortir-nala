@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { moves, patitas } from '$lib/consts';
-	import { gameStore } from '$lib/store';
+	import { errorStore, gameStore } from '$lib/store';
 	import type { Move } from '$lib/types';
 	import Square from './square.svelte';
 
@@ -23,11 +23,6 @@
 	const move = async ({ m }: { m: Move }) => {
 		disableButtons();
 
-		gameStore.update((state) => {
-			state.m1 = m;
-			return state;
-		});
-
 		const res = await fetch('/api/sse', {
 			method: 'POST',
 			headers: {
@@ -36,11 +31,17 @@
 			body: JSON.stringify({ move: m })
 		});
 		if (res.ok) {
+			gameStore.update((state) => {
+				state.m1 = m;
+				return state;
+			});
 			if ($gameStore.m1 !== '' && $gameStore.m2 !== '') {
 				$gameStore.status = 'finished';
 			} else {
 				$gameStore.status = 'waiting';
 			}
+		} else {
+			$errorStore = true;
 		}
 	};
 </script>
@@ -48,6 +49,7 @@
 <section id="board">
 	{#each moves as m (m)}
 		<button
+			disabled
 			on:click={() => {
 				move({ m });
 			}}
