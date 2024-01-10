@@ -1,0 +1,112 @@
+- name: Setting port variable for nginx and node container
+  hosts:
+    - tictac
+    - proxy
+  vars:
+    ansible_user: root
+  tasks:
+    - name: Set shared variable
+      set_fact:
+        redirect_port: 4444
+
+- hosts: localhost
+  name: Build quivasortirnala
+  tasks:
+    - name: Set built to false before build
+      ansible.builtin.set_fact:
+        built: false
+    - name: Build front on host
+      ansible.builtin.command: pnpm build
+      register: my_output # <- Registers the command output.
+      changed_when: my_output.rc != 0 # <- Uses the return code to define when the task has changed.
+      args:
+        chdir: /home/sft/dev/qui-va-sortir-nala/front/
+      tags: build
+    - name: Set built when build succeded
+      ansible.builtin.set_fact:
+        built: true
+      tags: build
+
+- hosts: tictac
+  name: Deploy
+  gather_facts: true
+  vars:
+    ansible_user: root
+  tasks:
+    - name: Stop server
+      ansible.builtin.command: rc-service qui-va-sortir-nala stop
+      register: my_output # <- Registers the command output.
+      changed_when: my_output.rc != 0
+      ignore_errors: true
+    - name: Service file from template
+      template:
+        src: service.j2
+        dest: /etc/init.d/qui-va-sortir-nala
+        mode: '0755'
+        owner: root
+        group: root
+      
+      tags: service
+    - name: Rsync copy source
+      ansible.posix.synchronize:
+        mode: push
+        src: /home/sft/dev/qui-va-sortir-nala/front/
+        dest: /opt/qui-va-sortir-nala
+        rsync_opts:
+          - "--exclude=node_modules"
+          - "--exclude=build"
+          - "--exclude=.svelte-kit"
+          - "--exclude=.git"
+          - "--delete"
+      register: output
+    - name: Ouput of copying source
+      ansible.builtin.debug:
+        var: output.stdout_lines
+    - name: NPM Install
+      ansible.builtin.command: npm install
+      register: my_output # <- Registers the command output.
+      changed_when: my_output.rc != 0
+      args:
+        chdir: /opt/qui-va-sortir-nala
+
+    - name: Rsync copy build
+      ansible.posix.synchronize:
+        mode: push
+        src: /home/sft/dev/qui-va-sortir-nala/front/build
+        dest: /opt/qui-va-sortir-nala/
+      when: hostvars['localhost']['built']
+
+    - name: Build
+      ansible.builtin.command: npm run build
+      register: my_output # <- Registers the command output.
+      args:
+        chdir: /opt/qui-va-sortir-nala
+      when: not hostvars['localhost']['built']
+
+    - name: Restart server
+      ansible.builtin.command: rc-service qui-va-sortir-nala restart
+      register: my_output # <- Registers the command output.
+      changed_when: my_output.rc != 0
+      tags: restart
+
+- hosts: proxy
+  name: nginx
+  vars:
+    ansible_user: root
+  tasks:
+    - name: Generate Nginx configuration from template
+      template:
+        src: nala.j2
+        dest: /etc/nginx/sites-available/nala.proxypve.conf
+
+    - name: Create a symlink to enable the site
+      file:
+        src: /etc/nginx/sites-available/nala.proxypve.conf
+        dest: /etc/nginx/sites-enabled/nala.proxypve.conf
+        state: link
+
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
+    
