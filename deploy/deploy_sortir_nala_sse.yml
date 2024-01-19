@@ -5,7 +5,7 @@
   vars:
     ansible_user: root
   tasks:
-    - name: Set shared variable
+    - name: Set express port
       set_fact:
         redirect_port: 4444
 
@@ -94,7 +94,7 @@
   vars:
     ansible_user: root
   tasks:
-    - name: Generate Nginx configuration from template
+    - name: Generate Nginx for proxy.pve
       template:
         src: nala.j2
         dest: /etc/nginx/sites-available/nala.proxypve.conf
@@ -103,6 +103,17 @@
       file:
         src: /etc/nginx/sites-available/nala.proxypve.conf
         dest: /etc/nginx/sites-enabled/nala.proxypve.conf
+        state: link
+
+    - name: Generate Nginx for torocro
+      template:
+        src: nala-torocro.j2
+        dest: /etc/nginx/sites-available/nala.torocro.conf
+
+    - name: Create a symlink to enable the site
+      file:
+        src: /etc/nginx/sites-available/nala.torocro.conf
+        dest: /etc/nginx/sites-enabled/nala.torocro.conf
         state: link
 
     - name: Reload Nginx

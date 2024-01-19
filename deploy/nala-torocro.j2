@@ -1,0 +1,40 @@
+server {
+  server_name nala.torocro.duckdns.org;
+  listen [::]:443 ssl; # managed by Certbot
+  listen 443 ssl; # managed by Certbot
+  include /etc/nginx/conf.d/include/header-ssl.conf;
+  include /etc/nginx/conf.d/include/common-exploits.conf;
+    ssl_certificate /etc/letsencrypt/live/nala.torocro.duckdns.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/nala.torocro.duckdns.org/privkey.pem; # managed by Certbot
+    
+	location / {
+        proxy_pass http://192.168.0.113:{{redirect_port}}/;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_set_header Host $host;
+        proxy_set_header Connection '';
+        # proxy_http_version 1.1;
+        chunked_transfer_encoding off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Add appropriate headers to allow cross-origin requests
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'Origin, X-Requested-With, Content-Type, Accept';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+    }
+
+
+
+}
+# Redirect http traffic to https and return 404 if forced via http
+server {
+   if ($host = nala.torocro.duckdns.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+	listen 80 ;
+	listen [::]:80 ;
+    server_name nala.torocro.duckdns.org;
+    return 404; # managed by Certbot
+}
